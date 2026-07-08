@@ -1,0 +1,24 @@
+# Use an optimized, official Python lightweight image
+FROM python:3.11-slim
+
+# Set system environment variables to optimize Python inside a container
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Establish our working directory inside the cloud container
+WORKDIR /app
+
+# Copy dependency files first to utilize caching layers efficiently
+COPY requirements.txt /app/
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all infrastructure files, scripts, and json directories into the image
+COPY . /app/
+
+# Expose port 7999 for network traffic routing
+EXPOSE 7999
+
+# Execute the application engine via Uvicorn on container initialization
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7999"]

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Privacy-First Mail Ecosystem</title>
+    <style>
+        body { font-family: sans-serif; background-color: #fbf7ed; color: #333; padding: 20px; }
+        .header { font-size: 1.3rem; font-weight: bold; color: #1a4f66; margin-bottom: 20px; }
+        .container { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; max-width: 1100px; }
+        .card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        .action-link { color: #2b7a9e; text-decoration: underline; cursor: pointer; margin-right: 8px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-submit { background-color: #2b7a9e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .view-panel { background: #fdfdfd; border: 1px dashed #bbb; padding: 10px; margin-top: 15px; min-height: 100px; }
+        .msg-item { border-bottom: 1px solid #eee; padding: 6px 0; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header">✉ Mail Ecosystem</div>
+
+    <div class="container">
+        <div>
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>Mailbox Catalog</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Address</th>
+                            <th>Routing State</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="directory-rows">
+                        <tr><td colspan="3">Loading layout...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2 id="panel-title">Ecosystem Activity Monitor</h2>
+                <div id="panel-target" class="view-panel">Select an action above to track transaction streams.</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <h2>Outbound Compose Box</h2>
+                <form id="compose-form">
+                    <div class="form-group">
+                        <label>Sender Identity</label>
+                        <input type="text" id="msg-sender" readonly style="background:#f0f0f0;">
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Address</label>
+                        <input type="text" id="msg-recipient" required placeholder="user@domain/#kieckhefer">
+                    </div>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" id="msg-subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Secure Payload</label>
+                        <textarea id="msg-body" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit">Dispatch Outbound</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:7999/api";
+
+        async function bootDirectory() {
+            try {
+                const res = await fetch(`${API_BASE}/mailboxes`);
+                const mailboxes = await res.json();
+                const tbody = document.getElementById('directory-rows');
+                tbody.innerHTML = '';
+
+                mailboxes.forEach(box => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${box.address}</strong></td>
+                        <td><code>${box.routing_type.toUpperCase()}</code></td>
+                        <td>
+                            <span class="action-link" onclick="fetchMail('${box.address}', 'inbox')">View inbox</span>
+                            <span class="action-link" onclick="fetchMail('${box.address}', 'sent')">View sent</span>
+                            <span class="action-link" onclick="prepareCompose('${box.address}')" style="color: #c26100;">Compose</span>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (err) {
+                document.getElementById('directory-rows').innerHTML = `<tr><td colspan="3" style="color:red;">Error connecting to Python service.</td></tr>`;
+            }
+        }
+
+        async function fetchMail(address, boxType) {
+            try {
+                // Safeguard against URL fragment breaks using URLSearchParams parameters
+                const targetUrl = `${API_BASE}/messages/${boxType}?address=${encodeURIComponent(address)}`;
+                const res = await fetch(targetUrl);
+                const data = await res.json();
+                
+                document.getElementById('panel-title').innerText = `${boxType.toUpperCase()}: ${address}`;
+                const display = document.getElementById('panel-target');
+                display.innerHTML = data.length === 0 ? '<em>Comedy.</em>' : '';
+
+                data.forEach(msg => {
+                    display.innerHTML += `
+                        <div class="msg-item">
+                            <strong>From:</strong> ${msg.sender} | <strong>To:</strong> ${msg.recipient}<br>
+                            <strong>Subj:</strong> ${msg.subject}<br>
+                            <p style="margin:4px 0 0 0; color:#555;">${msg.body}</p>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                alert("Could not load message logs from API backend execution models.");
+            }
+        }
+
+        function prepareCompose(senderAddress) {
+            document.getElementById('msg-sender').value = senderAddress;
+            document.getElementById('msg-recipient').focus();
+        }
+
+        document.getElementById('compose-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                sender: document.getElementById('msg-sender').value,
+                recipient: document.getElementById('msg-recipient').value.trim(),
+                subject: document.getElementById('msg-subject').value.trim(),
+                body: document.getElementById('msg-body').value.trim()
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/messages/compose`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if(!res.ok) throw new Error("Validation rejection from backend layout rules.");
+                
+                alert("Dispatched completely across database execution registries!");
+                document.getElementById('msg-subject').value = '';
+                document.getElementById('msg-body').value = '';
+                fetchMail(payload.sender, 'sent');
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+
+        bootDirectory();
+    </script>
+</body>
+</html>

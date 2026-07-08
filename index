@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Modern Electronic Mail Ecosystem</title>
+    <style>
+        body { font-family: sans-serif; background-color: #fbf7ed; color: #333; padding: 20px; }
+        .header { font-size: 1.4rem; font-weight: bold; color: #1a4f66; margin-bottom: 20px; }
+        .card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 20px; max-width: 900px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #ddd; font-size: 0.9rem; }
+        th { background-color: #f2f2f2; }
+        .btn { color: #2b7a9e; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="header">📬 Connected Mail Ecosystem Directory</div>
+    
+    <div class="card">
+        <h2>Live Mailbox Catalog</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>System Address</th>
+                    <th>Routing Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="catalog-rows">
+                <tr><td colspan="4">Connecting to Python infrastructure on port 7999...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const BACKEND_URL = "http://127.0.0.1:7999/api/mailboxes";
+
+        // Query the live Python backend infrastructure
+        async function loadEcosystemData() {
+            try {
+                const response = await fetch(BACKEND_URL);
+                if (!response.ok) throw new Error("Backend response failed");
+                const mailboxes = await response.json();
+                
+                const tbody = document.getElementById("catalog-rows");
+                tbody.innerHTML = ""; // Clear status message
+
+                mailboxes.forEach(box => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td><strong>${box.address}</strong></td>
+                        <td><code>${box.routing_type.toUpperCase()}</code></td>
+                        <td style="color: green;">${box.status}</td>
+                        <td>
+                            <span class="btn" onclick="alert('Querying Inbox for ${box.address}')">Inbox</span> | 
+                            <span class="btn" onclick="alert('Querying Sent for ${box.address}')">Sent</span>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                document.getElementById("catalog-rows").innerHTML = 
+                    `<tr><td colspan="4" style="color: red; font-weight: bold;">
+                        Network Error: Cannot connect to Python backend. Ensure app.py is running on port 7999.
+                    </td></tr>`;
+            }
+        }
+
+        // Initialize connection on page load
+        loadEcosystemData();
+    </script>
+</body>
+</html>
